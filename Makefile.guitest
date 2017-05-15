@@ -1,0 +1,18 @@
+CC=clang
+CC_FLAGS=-std=c11
+LDFLAGS=-lcurses -lpanel -lmenu
+
+SOURCES=guitest.c
+OBJECTS = $(SOURCES:.c=.o)
+EXECUTABLE=guitest
+
+all: $(SOURCES) $(EXECUTABLE)
+    
+$(EXECUTABLE): $(OBJECTS) 
+	$(CC) $(CC_FLAGS) $(LDFLAGS) $(OBJECTS) -o $(EXECUTABLE)
+
+%.o: %.cpp
+	$(CC) -c $(CC_FLAGS) $< -o $@
+
+clean:
+	rm $(OBJECTS) $(EXECUTABLE)
