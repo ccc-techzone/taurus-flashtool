@@ -17,6 +17,32 @@
 int operations[3] = {OP_FLASH, OP_READ, OP_ERASE};
 int operation = OP_NON;
 
+void op_connect() {
+	int count = 0;
+	char idbuf[14];
+
+	while (count < 5 && !is_port_debug) {
+		if (sp_blocking_read(serport, idbuf, 14, 0) < 0) {
+			count = 5;
+			break;
+		}
+		debug_printf("Received: %.14s\n", idbuf);
+		if (memcmp(idbuf, "1234AABBCC1234", 14) == 0) {
+			debug_printf("[INF] Received ID!\n");
+			char idAns[] = "4321CCBBAA4321";
+			sp_blocking_write(serport, idAns, 14, 0);
+			break;
+		}
+		sleep(1);
+		count++;
+	}
+	if (count == 5) {
+		debug_printf("[ERR] ID Error!\n");
+		return;
+	}
+
+}
+
 void op_flash(char *file, progress_callback_t pcb) {
 	int fd;
 	struct stat sb;
@@ -58,40 +84,16 @@ void op_flash(char *file, progress_callback_t pcb) {
 
 	print_hex(len_frame, 2);
 
-	// 1234AABBCC1234
-	char idbuf[14];
-	int count = 0;
-
-	while (count < 5 && !is_port_debug) {
-		if (sp_blocking_read(serport, idbuf, 14, 0) < 0) {
-			count = 5;
-			break;
-		}
-		debug_printf("Received: %.14s\n", idbuf);
-		if (memcmp(idbuf, "1234AABBCC1234", 14) == 0) {
-			debug_printf("Received ID!\n");
-			char idAns[] = "4321CCBBAA4321";
-			sp_blocking_write(serport, idAns, 14, 0);
-			break;
-		}
-		sleep(1);
-		count++;
-	}
-	if (count == 5) {
-		debug_printf("[ERR] ID Error!\n");
-		return;
-	}
-
 	while (sp_input_waiting(serport)) {
 		char c;
 		sp_blocking_read(serport, &c, 1, 0);
 		gui_received(&c, 1);
 	}
 
-	//char op[] = {0xA5, 0xF1};
-	char op[] = {0xA5, 0xE2};
+	char op[] = {0xA5, 0xF1};
+	//char op[] = {0xA5, 0xE2};
 	sp_blocking_write(serport, op, 2, 0);
-	return;
+	//return;
 
 
 	if (!is_port_debug && sp_blocking_write(serport, len_frame, 2, 0) != 2) {
@@ -136,4 +138,10 @@ void op_flash(char *file, progress_callback_t pcb) {
 
 	munmap(data, sb.st_size);
 	close(fd);
+}
+
+void op_erase() {
+	char op[] = {0xA5, 0xE2};
+	sp_blocking_write(serport, op, 2, 0);
+	return;
 }

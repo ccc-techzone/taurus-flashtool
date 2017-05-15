@@ -43,12 +43,16 @@ int port_list(char **names, char **descs, taurus_info_t **taurus) {
 				likely_taurus = 1;
 			}
 
-			names[i] = (char *) malloc(strlen(port_name) + 1);
-			strcpy(names[i], port_name);
-			descs[i] = (char *) malloc(strlen(port_description) + 1);
-			strcpy(descs[i], port_description);
+			if (names != NULL) {
+				names[i] = (char *) malloc(strlen(port_name) + 1);
+				strcpy(names[i], port_name);
+			}
+			if (descs != NULL) {
+				descs[i] = (char *) malloc(strlen(port_description) + 1);
+				strcpy(descs[i], port_description);
+			}
 
-			if (likely_taurus) {
+			if (likely_taurus && taurus != NULL) {
 				char str_flash_size[5];
 				strncpy(str_flash_size, serial + 3, 4);
 				int flash_size = atoi(str_flash_size);
@@ -64,11 +68,16 @@ int port_list(char **names, char **descs, taurus_info_t **taurus) {
 		}
 		sp_free_port_list(ports);
 
-		names[i] = (char *) malloc(strlen("debug") + 1);
-		descs[i] = (char *) malloc(strlen("no real io") + 1);
-		strcpy(names[i], "debug");
-		strcpy(descs[i], "no real io");
-		taurus[i] = NULL;
+		if (names != NULL) {
+			names[i] = (char *) malloc(strlen("debug") + 1);
+			strcpy(names[i], "debug");
+		}
+		if (descs != NULL) {
+			descs[i] = (char *) malloc(strlen("no real io") + 1);
+			strcpy(descs[i], "no real io");
+		}
+		if (taurus != NULL)
+			taurus[i] = NULL;
 
 		return i + 1;		// +1: debug port
 	}
@@ -76,13 +85,43 @@ int port_list(char **names, char **descs, taurus_info_t **taurus) {
 
 void port_list_free(int cnt, char **names, char **descs, taurus_info_t **taurus) {
 	for (int i = 0; i < cnt; i++) {
-		free(names[i]);
-		free(descs[i]);
-		free(taurus[i]);
+		if (names != NULL)
+			free(names[i]);
+		if (descs != NULL)
+			free(descs[i]);
+		if (taurus != NULL)
+			free(taurus[i]);
 	}
 }
 
-void open_port(void) {
+int port_detect(char *name) {
+	int pcnt = port_cnt();
+	char **names = (char **) malloc(pcnt * sizeof(char *));
+	taurus_info_t **ti = (taurus_info_t **) malloc(pcnt * sizeof(taurus_info_t *));
+
+	port_list(names, NULL, ti);
+
+	for (int i = 0; i < pcnt; i++) {
+		if (ti[i]) {
+			strncpy(name, names[i], PORT_MAX_LEN);
+			port_list_free(pcnt, names, NULL, ti);
+			return 1;
+		}
+	}
+
+	port_list_free(pcnt, names, NULL, ti);
+	return 0;
+}
+
+void port_wait_detect(char *name, wait_callback cb) {
+	int found = 0;
+	while (!found) {
+		found = port_detect(name);
+		cb();
+	}
+}
+
+void port_open(void) {
 	if (strcmp(port, "debug") == 0) {
 		is_port_debug = 1;
 		debug_printf("[INF] Debugging port!\n");

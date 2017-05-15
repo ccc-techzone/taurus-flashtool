@@ -77,6 +77,12 @@ void gui_init(void) {
 	init_pair(CP_RED_WHITE, COLOR_WHITE, COLOR_RED);
 	init_pair(CP_PROGRESSBAR, COLOR_WHITE, COLOR_GREEN);
 
+	gui_reset();
+}
+
+void gui_reset() {
+	werase(stdscr);
+
 	debug_frame = newwin(LINES / 3 + 1, COLS, 2 * LINES / 3, 0);
 	wbkgd(debug_frame, COLOR_PAIR(CP_GRAY_WHITE));
 	//scrollok(debug_frame, TRUE);
@@ -94,15 +100,18 @@ void gui_init(void) {
 	scrollok(received, TRUE);
 	//wbkgd(received, COLOR_PAIR(CP_RED_WHITE));
 	wmove(received, 0, 0);
+
+	gui_refresh();
 }
 
 void gui_wait(void) {
 	getch();
 }
 
-void guiRefresh(void) {
+void gui_refresh(void) {
 	refresh();
-	wrefresh(win);
+	if (win != NULL)
+		wrefresh(win);
 	wrefresh(debug);
 	wrefresh(received);
 	wrefresh(debug_frame);
@@ -137,6 +146,8 @@ void debug_printf(const char *fmt, ...) {
 
 	if (strstr(fmt, "ERR") != NULL) {
 		wcolor_set(debug, CP_RED_WHITE, 0);
+	} else if (strstr(fmt, "INF") != NULL) {
+		wcolor_set(debug, CP_PROGRESSBAR, 0);
 	}
 
 	vwprintw(debug, fmt, argp);
@@ -145,7 +156,7 @@ void debug_printf(const char *fmt, ...) {
 
 	va_end(argp);
 
-	guiRefresh();
+	gui_refresh();
 }
 
 void print_hex(uint8_t *data, int len) {
@@ -193,7 +204,7 @@ int gui_query_op() {
     set_menu_sub(op_menu, derwin(win, menu_maxy, menu_maxx, 2, 1));
 	post_menu(op_menu);
 
-	guiRefresh();
+	gui_refresh();
 
 	int c;
 	while((c = wgetch(win)) != '\n') {
@@ -218,7 +229,7 @@ int gui_query_op() {
 	delwin(win);
 	werase(win);
 
-	guiRefresh();
+	gui_refresh();
 
 	return op;
 }
@@ -277,7 +288,7 @@ void gui_query_port(char *port, int len) {
 		wclear(details);
 	}
 
-	guiRefresh();
+	gui_refresh();
 	wrefresh(details);
 
 	while((c = wgetch(win)) != '\n') {
@@ -300,13 +311,13 @@ void gui_query_port(char *port, int len) {
 			wclear(details);
 		}
 
-        guiRefresh();
+        gui_refresh();
         wrefresh(details);
 	}
 
 	strncpy(port, item_name(current_item(port_menu)), len);
 	debug_printf("Port1: %s\n", port);
-	guiRefresh();
+	gui_refresh();
 
 	unpost_menu(port_menu);
 	free_menu(port_menu);
@@ -318,7 +329,7 @@ void gui_query_port(char *port, int len) {
 	delwin(win);
 	werase(win);
 
-	guiRefresh();
+	gui_refresh();
 
 	return;
 }
@@ -337,6 +348,30 @@ void gui_progress(int p) {
 
 	refresh();
 	wrefresh(win);
+}
+
+void gui_waiting() {
+	int maxx = 0, maxy = 0;
+	char chars[] = "|/-\\";
+	char message[] = "Waiting for port...";
+	static int iteration = 0;
+
+	delwin(win);
+	delwin(debug);
+	delwin(received);
+
+	getmaxyx(stdscr, maxy, maxx);
+	move(maxy / 3 - 1, maxx / 2 - strlen(message) / 2);
+	printw("%s", message);
+	move(maxy / 3, maxx / 2);
+
+	addch(chars[iteration++]);
+	if (iteration == 4)
+		iteration = 0;
+
+	refresh();
+
+	usleep(100000);
 }
 
 void gui_received(uint8_t *buf, size_t len) {

@@ -8,7 +8,10 @@
 
 typedef void (*progress_callback_t)(int);
 
+void op_connect();
+
 void op_flash(char *file, progress_callback_t pcb);
+void op_erase();
 
 extern int operation;
 extern int operations[3];

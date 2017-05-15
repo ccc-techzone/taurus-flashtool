@@ -98,7 +98,7 @@ void readOptions(int argc, char **argv) {
 		}
 	}
 
-	if (optind == argc) {
+	if (operation == OP_FLASH && optind == argc) {
 	 	printf("Must specify file!\n\n");
 	 	display_help(argv);
 	 	exit(EXIT_FAILURE);
@@ -112,7 +112,6 @@ void gui_main(int argc, char **argv) {
 	if (operation == OP_NON) {
 		operation = gui_query_op();
 		debug_printf("Op: %i\n", operation);
-
 	}
 	if (port[0] == '\0') {
 		gui_query_port(port, PORT_MAX_LEN);
@@ -122,40 +121,51 @@ void gui_main(int argc, char **argv) {
 	//gui_wait();
 }
 
-void tui_main(int argc, char **argv) {
-	if (operation == OP_NON) {
-		printf("One of --flash, --read, --erase must be specified!\n\n");
-		display_help(argv);
-		exit(EXIT_FAILURE);
-	}
-	if (port[0] == '\0') {
-		printf("Must specify port!\n\n");
-		display_help(argv);
-		exit(EXIT_FAILURE);
-	}
-}
 
-void tui_progress(int progress) {
-	printf("P: %i\n", progress);
-}
+// ID
+// FLASH: 0xF1A5 // ERASE: 0xE2A5
+// LEN
+// DATA
 
 
 int main (int argc, char **argv) {
 	readOptions(argc, argv);
 
-	progress_callback_t pcb = NULL;
+	gui_init();
 
-	if(is_interactive) {
-		gui_main(argc, argv);
-		pcb = gui_progress;
-	} else {
-		tui_main(argc, argv);
-		pcb = tui_progress;
+	port_wait_detect(port, gui_waiting);
+	gui_reset();
+	port_open();
+
+	op_connect();
+
+	if (operation == OP_NON) {
+		operation = gui_query_op();
+		debug_printf("Op: %i\n", operation);
 	}
 
-	open_port();
+	switch (operation) {
+	case OP_FLASH:
+		op_flash(file, gui_progress);
+		break;
+	case OP_ERASE:
+		op_erase();
+		break;
+	}
 
-	op_flash(file, pcb);
+	// progress_callback_t pcb = NULL;
+
+	// if(is_interactive) {
+	// 	gui_main(argc, argv);
+	// 	pcb = gui_progress;
+	// } else {
+	// 	tui_main(argc, argv);
+	// 	pcb = tui_progress;
+	// }
+
+	// open_port();
+
+	// op_flash(file, pcb);
 	
 	while (1) {
 		if (sp_input_waiting(serport)) {
@@ -168,7 +178,7 @@ int main (int argc, char **argv) {
 		}
 	}
 
-	exit (0);
+	// exit (0);
 }
 
 

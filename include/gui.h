@@ -12,8 +12,9 @@
 
 
 void gui_init(void);
+void gui_reset();
 void gui_wait(void);
-void guiRefresh(void);
+void gui_refresh(void);
 void wtitle(WINDOW *win, const char *title);
 
 void flash_win(int size, int packets);
@@ -26,7 +27,9 @@ void print_hex(uint8_t *data, int len);
 int gui_query_op();
 void gui_query_port(char *port, int len);
 void gui_progress(int p);
+void gui_waiting();
 void gui_received(uint8_t *buf, size_t len);
+
 
 
 extern WINDOW *win;
