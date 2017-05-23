@@ -1,0 +1,27 @@
+CC=i686-w64-mingw32-gcc
+
+CC_FLAGS = -D WIN32 -std=c11 -g 
+CC_FLAGS+= -Iinclude -Iwin32/include -Iwin32/include/ncurses/
+
+LDFLAGS  = -Lwin32/lib
+LDFLAGS += -lmman -lserialport -lmenu -lncurses -lsetupapi
+
+SOURCES=main.c gui.c port.c ops.c
+OBJECTS = $(SOURCES:.c=.o)
+EXECUTABLE=flashtool.exe
+
+.PHONY: clean dist
+
+all: $(SOURCES) $(EXECUTABLE)
+    
+$(EXECUTABLE): $(OBJECTS) 
+	$(CC)  $(OBJECTS) $(LDFLAGS) -o $(EXECUTABLE)
+
+%.o: %.c
+	$(CC) -c $(CC_FLAGS) $< -o $@
+
+clean:
+	rm $(OBJECTS) $(EXECUTABLE)
+
+dist:
+	cp $(EXECUTABLE) dist/

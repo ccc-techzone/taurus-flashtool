@@ -5,12 +5,17 @@
 #include <stdio.h>     /* for printf */
 #include <stdlib.h>    /* for exit */
 #include <string.h>
+
+#ifndef WIN32
 #include <sys/mman.h>
+#else
+#include "mman.h"
+#endif
+
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/ioctl.h>
 
 #include <libserialport.h>
 
@@ -20,6 +25,10 @@ int operation = OP_NON;
 void op_connect() {
 	int count = 0;
 	char idbuf[14];
+
+	if (is_port_debug) {
+		return;
+	}
 
 	while (count < 5 && !is_port_debug) {
 		if (sp_blocking_read(serport, idbuf, 14, 0) < 0) {
@@ -67,14 +76,10 @@ void op_flash(char *file, progress_callback_t pcb) {
 
 
 	// window size for progress bar
-	struct winsize w;
-	ioctl(0, TIOCGWINSZ, &w);
-
 	int leftover = sb.st_size;
 	int packet_size = 4;
 	int total_packets = leftover / packet_size;
 	int packet_counter = 0;
-	int packets_per_dot = total_packets / (w.ws_col - 10);
 
 	flash_win(sb.st_size, total_packets);
 
@@ -84,7 +89,7 @@ void op_flash(char *file, progress_callback_t pcb) {
 
 	print_hex(len_frame, 2);
 
-	while (sp_input_waiting(serport)) {
+	while (!is_port_debug && sp_input_waiting(serport)) {
 		char c;
 		sp_blocking_read(serport, &c, 1, 0);
 		gui_received(&c, 1);
@@ -119,7 +124,7 @@ void op_flash(char *file, progress_callback_t pcb) {
 
 		//usleep(500);
 
-		if (sp_input_waiting(serport)) {
+		if (!is_port_debug && sp_input_waiting(serport)) {
 			uint8_t buf[128];
 			int len = sp_nonblocking_read(serport, buf, 128);
 
@@ -133,8 +138,6 @@ void op_flash(char *file, progress_callback_t pcb) {
 
 		//sleep(5);
 	}
-
-	debug_printf("Left: %i\n", leftover);
 
 	munmap(data, sb.st_size);
 	close(fd);

@@ -8,6 +8,7 @@
 
 char port[PORT_MAX_LEN] = "";
 struct sp_port *serport;
+int is_port_debug = 0;
 
 int port_cnt() {
 	struct sp_port **ports;
@@ -106,9 +107,12 @@ int port_detect(char *name) {
 			strncpy(name, names[i], PORT_MAX_LEN);
 			port_list_free(pcnt, names, NULL, ti);
 			return 1;
+		} else if (!ti[i] && i == pcnt - 2) {
+			strncpy(name, names[i], PORT_MAX_LEN);
+			break;
 		}
 	}
-
+	
 	port_list_free(pcnt, names, NULL, ti);
 	return 0;
 }
@@ -126,6 +130,11 @@ void port_open(void) {
 		is_port_debug = 1;
 		debug_printf("[INF] Debugging port!\n");
 		return;
+	}
+
+	if (port[0] == '\0') {
+		debug_printf("No port specified!\n");
+		exit(2);
 	}
 
 	debug_printf("Opening port %s\n", port);

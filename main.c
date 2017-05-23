@@ -11,7 +11,6 @@
 #include "port.h"
 
 
-int is_port_debug = 0;
 int is_interactive = TRUE;
 char *file = NULL;
 
@@ -133,8 +132,10 @@ int main (int argc, char **argv) {
 
 	gui_init();
 
-	port_wait_detect(port, gui_waiting);
-	gui_reset();
+	if (port[0] == '\0') {
+		port_wait_detect(port, gui_waiting);
+		gui_reset();
+	}
 	port_open();
 
 	op_connect();
@@ -153,32 +154,7 @@ int main (int argc, char **argv) {
 		break;
 	}
 
-	// progress_callback_t pcb = NULL;
-
-	// if(is_interactive) {
-	// 	gui_main(argc, argv);
-	// 	pcb = gui_progress;
-	// } else {
-	// 	tui_main(argc, argv);
-	// 	pcb = tui_progress;
-	// }
-
-	// open_port();
-
-	// op_flash(file, pcb);
-	
-	while (1) {
-		if (sp_input_waiting(serport)) {
-			uint8_t buf[128];
-			int len = sp_nonblocking_read(serport, buf, 128);
-
-			debug_printf("Read %i bytes\n", len);
-			if (len > 0)
-				gui_received(buf, len);
-		}
-	}
-
-	// exit (0);
+	exit (0);
 }
 
 

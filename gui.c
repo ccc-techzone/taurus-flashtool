@@ -356,9 +356,9 @@ void gui_waiting() {
 	char message[] = "Waiting for port...";
 	static int iteration = 0;
 
-	delwin(win);
-	delwin(debug);
-	delwin(received);
+	//delwin(win);
+	//delwin(debug);
+	//delwin(received);
 
 	getmaxyx(stdscr, maxy, maxx);
 	move(maxy / 3 - 1, maxx / 2 - strlen(message) / 2);
