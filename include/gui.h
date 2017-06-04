@@ -30,9 +30,12 @@ void gui_progress(int p);
 void gui_waiting();
 void gui_received(uint8_t *buf, size_t len);
 
+int gui_redo();
+
 
 
 extern WINDOW *win;
 extern WINDOW *debug;
+extern int proper_exit;
 
 #endif

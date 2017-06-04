@@ -128,32 +128,52 @@ void gui_main(int argc, char **argv) {
 
 
 int main (int argc, char **argv) {
+	int redo = 1;
+
 	readOptions(argc, argv);
 
 	gui_init();
 
-	if (port[0] == '\0') {
-		port_wait_detect(port, gui_waiting);
+	while (redo) {
+		if (port[0] == '\0') {
+			port_wait_detect(port, gui_waiting);
+			gui_reset();
+		}
+		port_open();
+
+		op_connect();
+
+		if (operation == OP_NON) {
+			operation = gui_query_op();
+			debug_printf("Op: %i\n", operation);
+		}
+
+		switch (operation) {
+		case OP_FLASH:
+			op_flash(file, gui_progress);
+			break;
+		case OP_ERASE:
+			op_erase();
+			break;
+		}
+
+		while (1) {
+			uint8_t buf[128];
+			int len = sp_nonblocking_read(serport, buf, 128);
+
+			if (len > 0) {
+				debug_printf("Read %i bytes\n", len);
+				gui_received(buf, len);
+			}
+		}
+
+
+		redo = gui_redo();
 		gui_reset();
-	}
-	port_open();
-
-	op_connect();
-
-	if (operation == OP_NON) {
-		operation = gui_query_op();
-		debug_printf("Op: %i\n", operation);
+		port[0] = '\0';
 	}
 
-	switch (operation) {
-	case OP_FLASH:
-		op_flash(file, gui_progress);
-		break;
-	case OP_ERASE:
-		op_erase();
-		break;
-	}
-
+	proper_exit = 1;
 	exit (0);
 }
 

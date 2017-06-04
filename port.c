@@ -1,4 +1,5 @@
 #include "port.h"
+#include "gui.h"
 
 #include <stdio.h>
 #include <libserialport.h>
@@ -139,17 +140,14 @@ void port_open(void) {
 
 	debug_printf("Opening port %s\n", port);
 
+
 	enum sp_return err = sp_get_port_by_name(port, &serport);
 	if (err != SP_OK) {
 		debug_printf("[ERR] Error opening serial device 1: %s\n", sp_last_error_message());
 		exit(EXIT_FAILURE);
 	}
 
-	err = sp_open(serport, SP_MODE_READ_WRITE);
-	if (err != SP_OK) {
-		debug_printf("[ERR] Error opening serial device 2: %s\n", sp_last_error_message());
-		exit(EXIT_FAILURE);
-	}
+	while ((err = sp_open(serport, SP_MODE_READ_WRITE)) != SP_OK);
 
 	sp_set_baudrate(serport, COM_BAUD);
 }

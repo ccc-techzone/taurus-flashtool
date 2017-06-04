@@ -92,7 +92,7 @@ void op_flash(char *file, progress_callback_t pcb) {
 	while (!is_port_debug && sp_input_waiting(serport)) {
 		char c;
 		sp_blocking_read(serport, &c, 1, 0);
-		gui_received(&c, 1);
+		gui_received((uint8_t *) &c, 1);
 	}
 
 	char op[] = {0xA5, 0xF1};
@@ -144,6 +144,13 @@ void op_flash(char *file, progress_callback_t pcb) {
 }
 
 void op_erase() {
+	if (is_port_debug) {
+		debug_printf("Debugging erase\n");
+		return;
+	}
+
+	debug_printf("Erasing\n");
+
 	char op[] = {0xA5, 0xE2};
 	sp_blocking_write(serport, op, 2, 0);
 	return;

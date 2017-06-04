@@ -6,6 +6,7 @@
 #include <menu.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <stdarg.h>
 
 
@@ -16,19 +17,23 @@ WINDOW *debug_frame;
 WINDOW *debug;
 WINDOW *received;
 
+int proper_exit = 0;
+
 void quit(void) {
-	int win_h = 11, win_w = 40;
-	WINDOW *closewin = newwin(win_h, win_w, LINES / 2 - win_h / 2, COLS / 2 - win_w / 2);
-	wbkgd(closewin, COLOR_PAIR(CP_RED_WHITE));
-	box(closewin, 0, 0);
+	if (!proper_exit) {
+		int win_h = 11, win_w = 40;
+		WINDOW *closewin = newwin(win_h, win_w, LINES / 2 - win_h / 2, COLS / 2 - win_w / 2);
+		wbkgd(closewin, COLOR_PAIR(CP_RED_WHITE));
+		box(closewin, 0, 0);
 
-	mvwprintw(closewin, 5, 9, "Press any key to exit");
+		mvwprintw(closewin, 5, 9, "Press any key to exit");
 
 
-	refresh();
-	wrefresh(closewin);
+		refresh();
+		wrefresh(closewin);
 
-	gui_wait();
+		gui_wait();
+	}
 
 	delwin(win);
 	endwin();
@@ -385,4 +390,17 @@ void gui_received(uint8_t *buf, size_t len) {
 	}
 	refresh();
 	wrefresh(received);
+}
+
+int gui_redo() {
+	WINDOW *msg;
+	int win_h = 5, win_w = 40;
+	msg = newwin(win_h, win_w, LINES / 3 - win_h / 2, COLS / 2 - win_w / 2);
+	wbkgd(msg, COLOR_PAIR(CP_RED_WHITE));
+	box(msg, 0, 0);
+	mvwprintw(msg, 2, 2, "Press F1 to redo, any other to exit");
+	refresh();
+	wrefresh(msg);
+
+	return getch() == KEY_F(1);
 }
